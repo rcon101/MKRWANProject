@@ -92,6 +92,4 @@ menu_collision.grid(row=5, column=3)
 #all columnms
 runBtn.grid(columnspan=4)
 
-
-#root.mainloop()
 root.mainloop()
