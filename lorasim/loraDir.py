@@ -79,6 +79,9 @@ sf10 = np.array([10,-132.75,-130.25,-128.75])
 sf11 = np.array([11,-134.5,-132.75,-128.75])
 sf12 = np.array([12,-133.25,-132.25,-132.25])
 
+#store the locations of the nodes in a nice array so we can export to a .dat file
+nodeList = []
+
 #
 # check for collisions at base station
 # Note: called before a packet (or rather node) is inserted into the list
@@ -255,8 +258,9 @@ class myNode():
                 self.y = posy
                 found = 1
         self.dist = np.sqrt((self.x-bsx)*(self.x-bsx)+(self.y-bsy)*(self.y-bsy))
+        nodeStr = "" + str(self.nodeid) + " " + str(self.x) + " " + str(self.y) + " " + str(self.dist)
         print('node %d' %nodeid, "x", self.x, "y", self.y, "dist: ", self.dist)
-
+        nodeList.append(nodeStr)
         self.packet = myPacket(self.nodeid, packetlen, self.dist)
         self.sent = 0
 
@@ -471,20 +475,20 @@ nrReceived = 0
 nrProcessed = 0
 nrLost = 0
 
-Ptx = 14
+Ptx = 14        #can set this to other values here
 gamma = 2.08
 d0 = 40.0
 var = 0           # variance ignored for now
 Lpld0 = 127.41
 GL = 0
 
-sensi = np.array([sf7,sf8,sf9,sf10,sf11,sf12])
+sensi = np.array([sf7,sf8,sf9,sf10,sf11,sf12])  #sensi is the sensitivity
 if experiment in [0,1,4]:
     minsensi = sensi[5,2]  # 5th row is SF12, 2nd column is BW125
 elif experiment == 2:
     minsensi = -112.0   # no experiments, so value from datasheet
 elif experiment in [3,5]:
-    minsensi = np.amin(sensi) ## Experiment 3 can use any setting, so take minimum
+    minsensi = np.amin(sensi) ## Experiment 3 can use any setting, so take minimum --> minsensi is minimum sensitivity --> numpy.amin(*array) takes the minimum of a numpy array
 Lpl = Ptx - minsensi
 print ("amin", minsensi, "Lpl", Lpl)
 maxDist = d0*(math.e**((Lpl-Lpld0)/(10.0*gamma)))
@@ -566,6 +570,64 @@ with open(fname, "a") as myfile:
     myfile.write(res)
 myfile.close()
 
+#we want to plot the locations of the nodes relative to the base station at 0,0
+#since they all have positive location values, we may get an odd looking graph
+#to fix this, we can negate the location values of half the nodes, so it will be a more uniform
+#circular distribution of nodes on the plot 
+
+fname = "loc" + str(experiment) + ".dat" #name would be loc0.dat for experiment 0
+if not(os.path.isfile(fname)):
+    res = "NodeID\t\tX\t\t\t\tY\t\t\t\tDistFromHub"
+else:
+    res = ""
+with open(fname, "a") as myfile:
+    myfile.write(res)
+    for i in range(0, len(nodeList)):#range does the -1 for us! python is a little too easy sometimes and causes bugs
+        res = "\n" + nodeList[i]
+        myfile.write(res)
+myfile.close()
+print(fname)
+##TODO: Graph Locations of the nodes relative to the basestation at (0,0)
+#going to subtract 100 from each value so that the range is (-100, 100) for both x and y directions,
+#currently range is (0,200) for both x and y
+#to implement this, we need to get the contents of the file into into form and into 3 parrallel arrays
+x = []#x locations
+y = []#y locations
+#we're going to implement this by opening the file becuase we want to use the contents of previous experiments as well
+#the gui will include a feature to delete this file
+first = 0
+with open(fname, "r") as f:
+    for line in f:
+        if(first==1):
+            #format of locX.dat files is: <NodeID> <x> <y> <dist>
+            l = line.split()#splits it into an array separated by the spaces
+            #we can ignore the id and distance so we only care about indices 1 and 2
+            x.append(float(l[1]) - 100)
+            y.append(float(l[2]) - 100)
+        else:
+            first += 1
+f.close()#to my understanding, the 'with' statement should close the file automatically when we leave it's scope,
+# but I closed it manually to stay consistent with the author of the OP
+print(len(x))
+
+#now we have some good arrays that we can plot with our matplotlib as plt extension
+plt.style.use('seaborn-whitegrid')
+plt.plot(0, 0, 'o', color='r', label='basestation')#representation of the basestation
+plt.plot(x, y, 'o', color='k', label='nodes')#all the nodes
+plt.legend(loc='upper left')
+plt.show()
+    
+    
+
+
+
+    
+     
+
+            
+    
+        
+print("done!")
 # with open('nodes.txt','w') as nfile:
 #     for n in nodes:
 #         nfile.write("{} {} {}\n".format(n.x, n.y, n.nodeid))

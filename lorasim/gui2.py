@@ -5,11 +5,29 @@ Created on Wed Jun 17 11:32:31 2020
 @author: Ryanc
 """
 
+import os
 from tkinter import *
+import math
+import simpy
+import random
+import numpy as np
+import math
+import sys
+import matplotlib.pyplot as plt
 
+#should take an array of buttons as an argument
 def run():
     print("Run Program")
-
+    #need to change this os.system line to extrace the data from the widgets
+    collision="0"
+    if menu_collision['text'] == "True":
+        collision="1"
+    params = [entry_numNodes.get(), entry_avgSend.get(), menu_experiment['text'],
+              entry_simTime.get(), collision]
+    cmdStr = "python loraDir.py " + params[0] + " " + params[1] + " " + params[2] + " " + params[3] + " " + params[4]
+    print(cmdStr)
+    os.system(cmdStr)
+    
 #initialize window frame
 root = Tk()
 
@@ -56,6 +74,7 @@ entry_simTime = Entry(root)
 menu_collision = OptionMenu(root, v1, *tfList)
 
 #buttons
+rightParams = [entry_numNodes, entry_avgSend, menu_experiment, entry_simTime, menu_collision]
 runBtn = Button(root, text="Simulate", command=run)
 
 #grid all widgets
