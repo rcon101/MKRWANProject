@@ -9,3 +9,8 @@ it is hard to debug problems that arise with the low-level communication. Often 
 waiting for a response from the server.
 
 The python scripts are all written in Python 2, besides LoraDir.py, which I've updated to Python 3. The rest require updates to the print statements to work. This could include simply commenting them out, but this won't yield any useful information.
+
+
+6/24 12:30pm Commit --> Updates to gui2.py and loraDir.py
+-added functionality in loraDir.py to extract location information of nodes and store in a file name locX.dat, X being the experiment(0-5) being used
+-added feature that plots the nodes relative to the basestation located at (0,0) in loraDir.py
