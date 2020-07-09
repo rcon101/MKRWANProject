@@ -14,3 +14,8 @@ The python scripts are all written in Python 2, besides LoraDir.py, which I've u
 6/24 12:30pm Commit --> Updates to gui2.py and loraDir.py
 -added functionality in loraDir.py to extract location information of nodes and store in a file name locX.dat, X being the experiment(0-5) being used
 -added feature that plots the nodes relative to the basestation located at (0,0) in loraDir.py
+
+
+7/9 2:30pm Commit --> Uploaded new versions of gui2.py and loraDir.py
+-added feature in loraDir that when run, graphs all node locations relative to basestation and color codes them by SF
+-gui2.py was uploaded to ensure compatability
