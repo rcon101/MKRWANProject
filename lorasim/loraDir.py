@@ -64,7 +64,7 @@ full_collision = False
 
 # experiments:
 # 0: packet with longest airtime, aloha-style experiment
-# 0: one with 3 frequencies, 1 with 1 frequency
+# 1: one with 3 frequencies, 1 with 1 frequency
 # 2: with shortest packets, still aloha-style
 # 3: with shortest possible packets depending on distance
 
@@ -81,6 +81,7 @@ sf12 = np.array([12,-133.25,-132.25,-132.25])
 
 #store the locations of the nodes in a nice array so we can export to a .dat file
 nodeList = []
+packets = []
 
 #
 # check for collisions at base station
@@ -274,8 +275,12 @@ class myNode():
 # this function creates a packet (associated with a node)
 # it also sets all parameters, currently random
 #
+            
+#we can extract info from these packets and match them up with the nodes they come from via the nodeid parameter
+#this will be a nice way to get all of the rssi
 class myPacket():
     def __init__(self, nodeid, plen, distance):
+        #all of these global values are set in the main code at the bottom of this file labeled --> "MAIN PROGRAM"
         global experiment
         global Ptx
         global gamma
@@ -286,6 +291,10 @@ class myPacket():
 
         self.nodeid = nodeid
         self.txpow = Ptx
+        
+        #this is the only section I have found so far that sets the signal parameters of the transmission packets
+        #to do what we want we should edit these to accept values from our gui program
+        #to implement this, we are gonna have to change the structure of the arguments passed to loraDir.py
 
         # randomize configuration values
         self.sf = random.randint(6,12)
@@ -317,7 +326,8 @@ class myPacket():
         # log-shadow
         Lpl = Lpld0 + 10*gamma*math.log10(distance/d0)
         print ("Lpl:", Lpl)
-        Prx = self.txpow - GL - Lpl
+        Prx = self.txpow - GL - Lpl #not sure what GL is, it is set to 0 in the main code. Lpl has something to do with sensitivity I beleive
+        #Prx is the power of the signal recieved by the basestation --> the stuff being subtracted is likely assumed loss across the medium
 
         if (experiment == 3) or (experiment == 5):
             minairtime = 9999
@@ -361,7 +371,8 @@ class myPacket():
         self.pl = plen
         self.symTime = (2.0**self.sf)/self.bw
         self.arriveTime = 0
-        self.rssi = Prx
+        self.rssi = Prx #Prx
+        #this is where we get the rssi into the file associated with the 
         # frequencies: lower bound + number of 61 Hz steps
         self.freq = 860000000 + random.randint(0,2622950)
 
@@ -379,6 +390,8 @@ class myPacket():
         # denote if packet is collided
         self.collided = 0
         self.processed = 0
+        mystring = "" + str(self.nodeid) + " " + str(self.rssi) + " " + str(self.sf)#we can add to this to change the format so we can include more stats. Going to start with RSSI
+        packets.append(mystring)
 
 #
 # main discrete event loop, runs for each node
@@ -457,7 +470,7 @@ else:
     exit(-1)
 
 
-# global stuff
+# global stuff --> change values here to change the simulation. All of the "global" values in myPacket and myNode are instantiated here
 #Rnd = random.seed(12345)
 nodes = []
 packetsAtBS = []
@@ -475,12 +488,12 @@ nrReceived = 0
 nrProcessed = 0
 nrLost = 0
 
-Ptx = 14        #can set this to other values here
+Ptx = 14        #can set this to other values here --> global version that is used in the myPacket() function to set TX power of a packet
 gamma = 2.08
-d0 = 40.0
+d0 = 40.0         #I beleive this is the best possible RSSI, it is used to find Lpl from Lpld0 in myPacket()
 var = 0           # variance ignored for now
-Lpld0 = 127.41
-GL = 0
+Lpld0 = 127.41 #not sure what this is, cant find anything about Lpl in signal processing. It is used to calculate Prx in the myPacket() function
+GL = 0         #also not sure what this is, also used ot calculate Prx in the myPacket() function
 
 sensi = np.array([sf7,sf8,sf9,sf10,sf11,sf12])  #sensi is the sensitivity
 if experiment in [0,1,4]:
@@ -575,58 +588,110 @@ myfile.close()
 #to fix this, we can negate the location values of half the nodes, so it will be a more uniform
 #circular distribution of nodes on the plot 
 
-fname = "loc" + str(experiment) + ".dat" #name would be loc0.dat for experiment 0
+fname = "nodes" + str(experiment) + ".dat" #name would be loc0.dat for experiment 0
 if not(os.path.isfile(fname)):
-    res = "NodeID\t\tX\t\t\t\tY\t\t\t\tDistFromHub"
+    res = "NodeID\t\tX\t\t\t\tY\t\t\t\tDistFromHub\t\t\t\tRSSI\t\t\t\tSF"
 else:
     res = ""
 with open(fname, "a") as myfile:
     myfile.write(res)
-    for i in range(0, len(nodeList)):#range does the -1 for us! python is a little too easy sometimes and causes bugs
-        res = "\n" + nodeList[i]
+    for i in range(0, len(nodeList)):#range does the -1 for us! python is a little too easy sometimes
+        line = packets[i].split()
+        res = "\n" + nodeList[i] + " " + line[1] + " " + line[2]#appending the RSSI and SF from the packets array. can add more here when we add more to this string array
         myfile.write(res)
 myfile.close()
 print(fname)
-##TODO: Graph Locations of the nodes relative to the basestation at (0,0)
+
+
+#Graph Locations of the nodes relative to the basestation at (0,0)
 #going to subtract 100 from each value so that the range is (-100, 100) for both x and y directions,
 #currently range is (0,200) for both x and y
 #to implement this, we need to get the contents of the file into into form and into 3 parrallel arrays
 x = []#x locations
 y = []#y locations
+dist = []#distance from the origin (hypotenuse)
+rssi = []#rssi for the associated node
+sf = []
 #we're going to implement this by opening the file becuase we want to use the contents of previous experiments as well
 #the gui will include a feature to delete this file
 first = 0
 with open(fname, "r") as f:
     for line in f:
         if(first==1):
-            #format of locX.dat files is: <NodeID> <x> <y> <dist>
+            #format of nodesX.dat files is: <NodeID> <x> <y> <dist> <RSSI>
             l = line.split()#splits it into an array separated by the spaces
-            #we can ignore the id and distance so we only care about indices 1 and 2
-            x.append(float(l[1]) - 100)
-            y.append(float(l[2]) - 100)
+            #we can ignore the id so we only care about indices 1-3
+            x.append(float(l[1]))
+            y.append(float(l[2]))
+            dist.append(float(l[3]))
+            rssi.append(float(l[4]))
+            sf.append(float(l[5]))
         else:
             first += 1
 f.close()#to my understanding, the 'with' statement should close the file automatically when we leave it's scope,
 # but I closed it manually to stay consistent with the author of the OP
-print(len(x))
+
+#at this point in the program we have files and arrays filled with most of the information from the simultion.
+#this begins the section of graphical programming, and traversing and associating speficific pieces of data from the arrays and files.
+
+#NEXT TODO: Modify graph above so that the Spreading Factor of the node is displayed and the dots are color coded to show SF
+#each of these will be just simple arrays of points but are now associated with Spreading Factors
+sf6x=[]
+sf6y=[]
+sf7x=[]
+sf7y=[]
+sf8x=[]
+sf8y=[]
+sf9x=[]
+sf9y=[]
+sf10x=[]
+sf10y=[]
+sf11x=[]
+sf11y=[]
+sf12x=[]
+sf12y=[]
 
 #now we have some good arrays that we can plot with our matplotlib as plt extension
 plt.style.use('seaborn-whitegrid')
 plt.plot(0, 0, 'o', color='r', label='basestation')#representation of the basestation
-plt.plot(x, y, 'o', color='k', label='nodes')#all the nodes
+for i in range(0, len(sf)):#this loop traversal is going to split our data into a few arrays so we can plot them all separately with different colors and labels
+    if(sf[i] == 6):
+        sf6x.append(x[i])
+        sf6y.append(y[i])
+    if(sf[i] == 7):
+        sf7x.append(x[i])
+        sf7y.append(y[i])
+    if(sf[i] == 8):
+        sf8x.append(x[i])
+        sf8y.append(y[i])
+    if(sf[i] == 9):
+        sf9x.append(x[i])
+        sf9y.append(y[i])
+    if(sf[i] == 10):
+        sf10x.append(x[i])
+        sf10y.append(y[i])
+    if(sf[i] == 11):
+        sf11x.append(x[i])
+        sf11y.append(y[i])
+    if(sf[i] == 12):
+        sf12x.append(x[i])
+        sf12y.append(y[i])
+plt.plot(sf6x, sf6y, 'o', color = 'b', label = 'SF6')
+plt.plot(sf7x, sf7y, 'o', color = 'g', label = 'SF7')
+plt.plot(sf8x, sf8y, 'o', color = 'c', label = 'SF8')
+plt.plot(sf9x, sf9y, 'o', color = 'm', label = 'SF9')
+plt.plot(sf10x, sf10y, 'o', color = 'y', label = 'SF10')
+plt.plot(sf11x, sf11y, 'o', color = 'k', label = 'SF11')
+plt.plot(sf12x, sf12y, 'o', color = 'purple', label = 'SF12')
+#plt.plot(x, y, 'o', color='k', label='nodes')#all the nodes
 plt.legend(loc='upper left')
 plt.show()
-    
-    
 
 
 
-    
-     
 
-            
-    
-        
+
+  
 print("done!")
 # with open('nodes.txt','w') as nfile:
 #     for n in nodes:
