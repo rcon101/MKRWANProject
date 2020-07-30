@@ -55,6 +55,7 @@ import math
 import sys
 import matplotlib.pyplot as plt
 import os
+from mpl_toolkits.mplot3d import Axes3D
 
 # turn on/off graphics
 graphics = 0
@@ -228,6 +229,7 @@ class myNode():
         self.bs = bs
         self.x = 0
         self.y = 0
+        self.z = 0
 
         # this is very complex prodecure for placing nodes
         # and ensure minimum distance between each pair of nodes
@@ -235,19 +237,25 @@ class myNode():
         rounds = 0
         global nodes
         while (found == 0 and rounds < 100):
+            #create a random number that will be a seed to a location in the x and y direction
             a = random.random()
             b = random.random()
+            c = random.random()
             if b<a:
-                a,b = b,a
-            posx = b*maxDist*math.cos(2*math.pi*a/b)+bsx
-            posy = b*maxDist*math.sin(2*math.pi*a/b)+bsy
+                a,b = b,a #swaps values. same as temp=a, a=b, b=a in C/C++
+            posx = b*maxDist*math.cos(2*math.pi*a/b)+bsx #create a X position based on the maxDistance variable from main.
+            posy = b*maxDist*math.sin(2*math.pi*a/b)+bsy #create a Y position the same way.
+            posz = b*maxDist*math.sin(2*math.pi*a/c)+bsz #MY UPDATE --> ADD A Z COORDINATE
+            
+            #Since we have added the z location, we are going to need to factor this into our distance calculation
             if len(nodes) > 0:
                 for index, n in enumerate(nodes):
-                    dist = np.sqrt(((abs(n.x-posx))**2)+((abs(n.y-posy))**2))
+                    dist = np.sqrt(((abs(n.x-posx))**2)+((abs(n.y-posy))**2) + ((abs(n.z-posz))**2))#updated to calculate distance in 3 dimensions
                     if dist >= 10:
                         found = 1
                         self.x = posx
                         self.y = posy
+                        self.z = posz
                     else:
                         rounds = rounds + 1
                         if rounds == 100:
@@ -257,10 +265,11 @@ class myNode():
                 print ("first node")
                 self.x = posx
                 self.y = posy
+                self.z = posz
                 found = 1
-        self.dist = np.sqrt((self.x-bsx)*(self.x-bsx)+(self.y-bsy)*(self.y-bsy))
-        nodeStr = "" + str(self.nodeid) + " " + str(self.x) + " " + str(self.y) + " " + str(self.dist)
-        print('node %d' %nodeid, "x", self.x, "y", self.y, "dist: ", self.dist)
+        self.dist = np.sqrt((self.x-bsx)*(self.x-bsx)+(self.y-bsy)*(self.y-bsy)+(self.z-bsz)*(self.z-bsz))
+        nodeStr = "" + str(self.nodeid) + " " + str(self.x) + " " + str(self.y) + " " + str(self.z) + " " + str(self.dist) 
+        print('node %d' %nodeid, "x", self.x, "y", self.y, "z", self.z, "dist: ", self.dist)
         nodeList.append(nodeStr)
         self.packet = myPacket(self.nodeid, packetlen, self.dist)
         self.sent = 0
@@ -510,9 +519,10 @@ print ("maxDist:", maxDist)
 # base station placement
 bsx = maxDist+10
 bsy = maxDist+10
+bsz = maxDist+10
 xmax = bsx + maxDist + 20
 ymax = bsy + maxDist + 20
-
+zmax = bsz + maxDist + 20
 # prepare graphics and add sink
 if (graphics == 1):
     plt.ion()
@@ -609,6 +619,7 @@ print(fname)
 #to implement this, we need to get the contents of the file into into form and into 3 parrallel arrays
 x = []#x locations
 y = []#y locations
+z = []#z locations
 dist = []#distance from the origin (hypotenuse)
 rssi = []#rssi for the associated node
 sf = []
@@ -623,9 +634,10 @@ with open(fname, "r") as f:
             #we can ignore the id so we only care about indices 1-3
             x.append(float(l[1]))
             y.append(float(l[2]))
-            dist.append(float(l[3]))
-            rssi.append(float(l[4]))
-            sf.append(float(l[5]))
+            z.append(float(l[3]))
+            dist.append(float(l[4]))
+            rssi.append(float(l[5]))
+            sf.append(float(l[6]))
         else:
             first += 1
 f.close()#to my understanding, the 'with' statement should close the file automatically when we leave it's scope,
@@ -633,63 +645,98 @@ f.close()#to my understanding, the 'with' statement should close the file automa
 
 #at this point in the program we have files and arrays filled with most of the information from the simultion.
 #this begins the section of graphical programming, and traversing and associating speficific pieces of data from the arrays and files.
+#IMPORTANT NOTE: As of 7/9, the arrays of the node information includes past experiments. If we want to only display data from the most recent experiment, the current
+#best way to do this is to delete the nodesX.dat file from your lorasim folder. The program will create a new one with a header when it sees it does not exist during the sim.
+#This means that we are seeing compounded graphs from each run of the program, showing all of the experiments data on one graph.
 
 #NEXT TODO: Modify graph above so that the Spreading Factor of the node is displayed and the dots are color coded to show SF
 #each of these will be just simple arrays of points but are now associated with Spreading Factors
-sf6x=[]
+sf6x=sf6y=[]
 sf6y=[]
+sf6z=[]
 sf7x=[]
 sf7y=[]
+sf7z=[]
 sf8x=[]
 sf8y=[]
+sf8z=[]
 sf9x=[]
 sf9y=[]
+sf9z=[]
 sf10x=[]
 sf10y=[]
+sf10z=[]
 sf11x=[]
 sf11y=[]
+sf11z=[]
 sf12x=[]
 sf12y=[]
+sf12z=[]
 
 #now we have some good arrays that we can plot with our matplotlib as plt extension
 plt.style.use('seaborn-whitegrid')
-plt.plot(0, 0, 'o', color='r', label='basestation')#representation of the basestation
-for i in range(0, len(sf)):#this loop traversal is going to split our data into a few arrays so we can plot them all separately with different colors and labels
+#plt.plot(bsx, bsy, 'o', color='r', label='basestation')#representation of the basestation
+#this loop traversal is going to split our data into a few arrays so we can plot them all separately with different colors and labels
+for i in range(0, len(sf)):
     if(sf[i] == 6):
         sf6x.append(x[i])
         sf6y.append(y[i])
+        sf6z.append(z[i])
     if(sf[i] == 7):
         sf7x.append(x[i])
         sf7y.append(y[i])
+        sf7z.append(z[i])
     if(sf[i] == 8):
         sf8x.append(x[i])
         sf8y.append(y[i])
+        sf8z.append(z[i])
     if(sf[i] == 9):
         sf9x.append(x[i])
         sf9y.append(y[i])
+        sf9z.append(z[i])
     if(sf[i] == 10):
         sf10x.append(x[i])
         sf10y.append(y[i])
+        sf10z.append(z[i])
     if(sf[i] == 11):
         sf11x.append(x[i])
         sf11y.append(y[i])
+        sf11z.append(z[i])
     if(sf[i] == 12):
         sf12x.append(x[i])
         sf12y.append(y[i])
-plt.plot(sf6x, sf6y, 'o', color = 'b', label = 'SF6')
+        sf12z.append(z[i])
+#at this point, we have the locations of nodes separated by what SF they are transmitting at      
+"""plt.plot(sf6x, sf6y, 'o', color = 'b', label = 'SF6')
 plt.plot(sf7x, sf7y, 'o', color = 'g', label = 'SF7')
 plt.plot(sf8x, sf8y, 'o', color = 'c', label = 'SF8')
 plt.plot(sf9x, sf9y, 'o', color = 'm', label = 'SF9')
 plt.plot(sf10x, sf10y, 'o', color = 'y', label = 'SF10')
 plt.plot(sf11x, sf11y, 'o', color = 'k', label = 'SF11')
 plt.plot(sf12x, sf12y, 'o', color = 'purple', label = 'SF12')
+"""
+bsxList=[]
+bsyList=[]
+bszList=[]
+bsxList.append(bsx)
+bsyList.append(bsy)
+bszList.append(bsz)
+
+fig = plt.figure()
+ax = fig.add_subplot(111, projection='3d')
+ax.plot(bsxList, bsyList, bszList, 'o', color='r', label='basestation')
+ax.plot(sf6x, sf6y, sf6z, 'o', color = 'b', label = 'SF6')
+ax.plot(sf7x, sf7y, sf7z, 'o', color = 'g', label = 'SF7')
+ax.plot(sf8x, sf8y, sf8z, 'o', color = 'c', label = 'SF8')
+ax.plot(sf9x, sf9y, sf9z, 'o', color = 'm', label = 'SF9')
+ax.plot(sf10x, sf10y, sf10z, 'o', color = 'y', label = 'SF10')
+ax.plot(sf11x, sf11y, sf11z, 'o', color = 'k', label = 'SF11')
+ax.plot(sf12x, sf12y, sf12z, 'o', color = 'purple', label = 'SF12')
+
+
 #plt.plot(x, y, 'o', color='k', label='nodes')#all the nodes
 plt.legend(loc='upper left')
 plt.show()
-
-
-
-
 
   
 print("done!")
