@@ -7,6 +7,7 @@
 */
 
 #include <MKRWAN.h>
+#include <ArduinoLowPower.h>
 
 LoRaModem modem;
 int seconds = 0;
@@ -17,8 +18,8 @@ int seconds = 0;
 #include "arduino_secrets.h"
 // Please enter your sensitive data in the Secret tab or arduino_secrets.h
 //currently configured for prototyping with a single MKR1300 board. As it stands we have to get one of each of these from ttn for each unique device flash.
-String appEui = "70B3D57ED0022BC0";
-String appKey = "4921DA14704F4C2A5CAE6314C154F8FB";
+String appEui = "70B3D57ED0034ED8";
+String appKey = "1C5093587252CD73F45B08EAE6599F92";
 String devAddr = "2602242F";
 String nwkSKey = "CD2B4A81C409F9B5A7F154CDAB700C3B";
 String appSKey = "B06ED62B9D34C4E7C851CBEE13B6C30B";
@@ -27,8 +28,7 @@ void setup() {
   // put your setup code here, to run once:
   Serial.begin(115200);
   while (!Serial);
-  
-  // change this to your regional band (eg. US915, AS923, ...)
+  Serial.println("Starting modem...");
   if (!modem.begin(US915)) {
     Serial.println("Failed to start module");
     while (1) {}
@@ -49,8 +49,9 @@ void setup() {
   long finish = 0;
   double elapsed = 0;
   while (!connected) {
-    Serial.print("Atttempting to connect to gateway...(Attempt ");
-    Serial.print(count++);
+    //Serial.print("Atttempting to connect to gateway...(Attempt ");
+    count++;
+    Serial.print(count);
     Serial.println(")");
     start = millis();
     connected = modem.joinOTAA(appEui, appKey, modem.deviceEUI());//need to make my own join function because this is not working right. Takes too long
@@ -87,53 +88,37 @@ void setup() {
 }
 
 void loop() 
-{
-  if(seconds % 10 == 0)
+{  
+  //Serial.println("Enter a message to send to the application server: ");
+  String msg = "Hello World";
+  /*while(Serial.available())
   {
-    seconds++;  
-    Serial.println();
-    
-    String msg = "Hello World!";
-  
-    Serial.println();
-    Serial.print("Sending: " + msg + " - ");
-    for (unsigned int i = 0; i < msg.length(); i++) {
-      Serial.print(msg[i] >> 4, HEX);
-      Serial.print(msg[i] & 0xF, HEX);
-      Serial.print(" ");
-    }
-    Serial.println();
-  
-    int err;
-    modem.beginPacket();
-    modem.print(msg);
-    err = modem.endPacket(true);
-    if (err > 0) {
-      Serial.println("Message sent correctly!");
-    } else {
-      Serial.println("Error sending message :(");
-    }
-    delay(1000);
-    if (!modem.available()) {
-      Serial.println("No downlink message received at this time.");
-      return;
-    }
-    char rcv[64];
-    int i = 0;
-    while (modem.available()) {
-      rcv[i++] = (char)modem.read();
-    }
-    Serial.print("Received: ");
-    for (unsigned int j = 0; j < i; j++) {
-      Serial.print(rcv[j] >> 4, HEX);
-      Serial.print(rcv[j] & 0xF, HEX);
-      Serial.print(" ");
-    }
-    Serial.println();
+    char c = Serial.read();//get a single byte from the Serial Buffer
+    msg += c;
+  }//creates msg
+  */
+  /*Serial.println();
+  Serial.print("Sending: " + msg + " - ");
+  for (unsigned int i = 0; i < msg.length(); i++) {
+    Serial.print(msg[i] >> 4, HEX);
+    Serial.print(msg[i] & 0xF, HEX);
+    Serial.print(" ");
   }
-  else//wait till a 10 second mark
-  {
-    seconds++;
-    delay(1000);  
+  Serial.println();
+  */
+  int err;
+  Serial.println("Transmitting message");
+  modem.beginPacket();
+  modem.print(msg);
+  err = modem.endPacket(true);
+  if (err > 0) {
+    Serial.println("Message sent correctly!");
+  } else {
+    Serial.println("Error sending message :(");
   }
+  Serial.println("Deep Sleeping for 10 seconds...");
+  //delay(200);//allow time for downlink thread to finish
+  //modem.sleep();//sleeping the modem actually makes the module draw MORE POWER? Could be my application, but this was the only thing I added and +4mA was the result
+  //LowPower.deepSleep(5000);
+  delay(5000);
 }
