@@ -1,5 +1,6 @@
 #include <SPI.h>
 #include <LoRa.h>
+#include "MD5.h"
 
 int counter = 0;
 
@@ -21,11 +22,16 @@ void loop() {
 
   // send packet
   LoRa.beginPacket();
-  LoRa.print("0: hello ");
+  unsigned char* hash = MD5::make_hash("1230");
+  char* md5str = MD5::make_digest(hash, 16);
+  //LoRa.print(counter%2);//give us either 0 or 1
+  LoRa.print(md5str);
+  LoRa.print(": hello ");
   LoRa.print(counter);
   LoRa.endPacket();
 
   counter++;
-
+  free(md5str);
+  free(hash);
   delay(5000);
 }
