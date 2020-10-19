@@ -5,8 +5,8 @@
 int counter = 0;
 
 void setup() {
-  Serial.begin(9600);
-  //while (!Serial);
+  Serial.begin(115200);
+  //while(!Serial);
 
   Serial.println("LoRa Sender");
 
@@ -25,9 +25,11 @@ void loop() {
   unsigned char* hash = MD5::make_hash("1230");
   char* md5str = MD5::make_digest(hash, 16);
   //LoRa.print(counter%2);//give us either 0 or 1
-  LoRa.print(md5str);
-  LoRa.print(": hello ");
-  LoRa.print(counter);
+  String m = md5str;
+  m += " hello ";
+  m += counter;
+  m += " from device 4";
+  LoRa.print(m);
   LoRa.endPacket();
 
   counter++;
