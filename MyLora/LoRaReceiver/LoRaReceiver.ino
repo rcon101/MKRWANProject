@@ -41,9 +41,9 @@ int runtime = 0;
 int startTime = 0;
 String appEui = "70B3D57ED0034ED8";
 String appKey = "413546B24A20423357D915EB1872DFD2";
-String devAddr = "2602272D";
-String nwkSKey = "C3B944B1E31843559F689F9C240B84B0";
-String appSKey = "86224C40C6FE8D063CC7449614C214AE";
+String devAddr = "2602254A";
+String nwkSKey = "3C25D4F27AD0270A46A45C1198B69673";
+String appSKey = "75D18106131972B9A43B804F15B506EE";
 const int BUFFER_SIZE = 256;
 String *packetBuffer = new String[BUFFER_SIZE];
 int bufferLen = 0;
@@ -116,7 +116,7 @@ void loop() {
     }
   }
   //we are going to connect to the gateway and send it all of our stored data.
-  if( (runtime/1000)%20 == 0 )//every 30 seconds of runtime
+  if( (runtime/1000)%20 == 0 && (bufferLen > 0))//every 30 seconds of runtime if there is any data packets in the buffer
   {
       connectingTime = millis();
       //connect to gateway through OTAA:
@@ -161,8 +161,10 @@ void loop() {
             int ack = 0;
             while(!ack){//send the packet until it is sent correctly
               String m = packetBuffer[i];
+              Serial.print("Starting Packet...");
               modem.beginPacket();
               modem.print(m);
+              Serial.print("waiting for ack from server...");
               int err = modem.endPacket(true);
               if( err > 0 )
               {
@@ -173,13 +175,14 @@ void loop() {
               else
               {
                 Serial.println("Error Sending Message :(");
-                delay(5000);
+                delay(5000);//allow time for downlink to be transmitted
               }
             }
           }
-          Serial.println("Packet Sent");
+          Serial.print("Transmissions Complete...");
           Serial.println("Returning to Reciever State");
           LoRa.begin(915E6);//return to radio state
+          bufferLen = 0;//assure we wait to get more packets before reconnecting to gateway for transmission.
           connectingTime = millis() - connectingTime;
         }
       } 
