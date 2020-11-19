@@ -40,7 +40,6 @@ lmh_confirm gCurrentConfirm = LMH_CONFIRMED_MSG;				  /* confirm/unconfirm packe
 uint8_t gAppPort = LORAWAN_APP_PORT;							  /* data port*/
 
 /**@brief Structure containing LoRaWan parameters, needed for lmh_init()
- * input all characteristics from above
  */
 static lmh_param_t lora_param_init = {LORAWAN_ADR_ON, LORAWAN_DATERATE, LORAWAN_PUBLIC_NETWORK, JOINREQ_NBTRIALS, LORAWAN_TX_POWER, LORAWAN_DUTYCYCLE_OFF};
 
@@ -53,12 +52,12 @@ static void send_lora_frame(void);
 /**@brief Structure containing LoRaWan callback functions, needed for lmh_init()
 */
 static lmh_callback_t lora_callbacks = {BoardGetBatteryLevel, BoardGetUniqueId, BoardGetRandomSeed,
-										lorawan_rx_handler, lorawan_has_joined_handler, lorawan_confirm_class_handler};
+										lorawan_rx_handler, lorawan_has_joined_handler, lorawan_confirm_class_handler};//
 
 //OTAA keys
-uint8_t nodeDeviceEUI[8] = {0x88, 0x88, 0x88, 0x88, 0x88, 0x88, 0x33, 0x33};
-uint8_t nodeAppEUI[8] = {0xB8, 0x27, 0xEB, 0xFF, 0xFE, 0x39, 0x00, 0x00};
-uint8_t nodeAppKey[16] = {0x88, 0x88, 0x88, 0x88, 0x88, 0x88, 0x88, 0x88, 0x88, 0x88, 0x88, 0x33, 0x33, 0x33, 0x33, 0x33};
+uint8_t nodeDeviceEUI[8] = { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x09, 0x30 };
+uint8_t nodeAppEUI[8] = { 0x70, 0xB3, 0xD5, 0x7E, 0xD0, 0x03, 0x4E, 0xD8 };
+uint8_t nodeAppKey[16] = { 0xE4, 0x80, 0xB2, 0xB7, 0xC4, 0x21, 0xB4, 0x1A, 0xED, 0x30, 0x1C, 0x64, 0x70, 0x2D, 0x7F, 0x95 };
 
 // Private defination
 #define LORAWAN_APP_DATA_BUFF_SIZE 64										  /**< buffer size of the data to be transmitted. */
@@ -182,27 +181,19 @@ void send_lora_frame(void)
 {
 	if (lmh_join_status_get() != LMH_SET)
 	{
-		//Not joined, try again later
+		Serial.printf("Not joined, try again later");
 		return;
 	}
 
 	uint32_t i = 0;
 	memset(m_lora_app_data.buffer, 0, LORAWAN_APP_DATA_BUFF_SIZE);
 	m_lora_app_data.port = gAppPort;
-	m_lora_app_data.buffer[i++] = '0';
-	m_lora_app_data.buffer[i++] = '|';
-	m_lora_app_data.buffer[i++] = '1';
-	m_lora_app_data.buffer[i++] = '|';
-	m_lora_app_data.buffer[i++] = '1';
-	m_lora_app_data.buffer[i++] = '|';
-  m_lora_app_data.buffer[i++] = '1';
-  m_lora_app_data.buffer[i++] = '|';
-  m_lora_app_data.buffer[i++] = '1';
-  m_lora_app_data.buffer[i++] = '|';
-  m_lora_app_data.buffer[i++] = '1';
-  m_lora_app_data.buffer[i++] = '|';
-  m_lora_app_data.buffer[i++] = '1';
-  m_lora_app_data.buffer[i++] = '|';
+	m_lora_app_data.buffer[i++] = 'H';
+	m_lora_app_data.buffer[i++] = 'e';
+	m_lora_app_data.buffer[i++] = 'l';
+	m_lora_app_data.buffer[i++] = 'l';
+	m_lora_app_data.buffer[i++] = 'o';
+	m_lora_app_data.buffer[i++] = '!';
 	m_lora_app_data.buffsize = i;
 
 	lmh_error_status error = lmh_send(&m_lora_app_data, gCurrentConfirm);
