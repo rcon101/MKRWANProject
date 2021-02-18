@@ -245,7 +245,7 @@ class myNode():
                 a,b = b,a #swaps values. same as temp=a, a=b, b=a in C/C++
             posx = b*maxDist*math.cos(2*math.pi*a/b)+bsx #create a X position based on the maxDistance variable from main.
             posy = b*maxDist*math.sin(2*math.pi*a/b)+bsy #create a Y position the same way.
-            posz = b*maxDist*math.sin(2*math.pi*a/c)+bsz #MY UPDATE --> ADD A Z COORDINATE
+            posz = b*maxDist*math.sin(2*math.pi*a/c)+bsz #---> ADD A Z COORDINATE
             
             #Since we have added the z location, we are going to need to factor this into our distance calculation
             if len(nodes) > 0:
@@ -459,6 +459,8 @@ def transmit(env,node):
 #
 # "main" program
 #
+        
+#to add arguments 6-10 for packet parameters, we n
 
 # get arguments
 if len(sys.argv) >= 5:
@@ -509,7 +511,7 @@ if experiment in [0,1,4]:
     minsensi = sensi[5,2]  # 5th row is SF12, 2nd column is BW125
 elif experiment == 2:
     minsensi = -112.0   # no experiments, so value from datasheet
-elif experiment in [3,5]:
+elif experiment in [3,5,6]:
     minsensi = np.amin(sensi) ## Experiment 3 can use any setting, so take minimum --> minsensi is minimum sensitivity --> numpy.amin(*array) takes the minimum of a numpy array
 Lpl = Ptx - minsensi
 print ("amin", minsensi, "Lpl", Lpl)
@@ -706,16 +708,40 @@ for i in range(0, len(sf)):
         sf12x.append(x[i])
         sf12y.append(y[i])
         sf12z.append(z[i])
-#at this point, we have the locations of nodes separated by what SF they are transmitting at      
-"""plt.plot(sf6x, sf6y, 'o', color = 'b', label = 'SF6')
+#at this point, we have the locations of nodes separated by what SF they are transmitting at     
+plt.figure(1)
+plt.plot(bsx, bsy, 'o', color='r', label='basestation')
+plt.plot(sf6x, sf6y, 'o', color = 'b', label = 'SF6')
 plt.plot(sf7x, sf7y, 'o', color = 'g', label = 'SF7')
 plt.plot(sf8x, sf8y, 'o', color = 'c', label = 'SF8')
 plt.plot(sf9x, sf9y, 'o', color = 'm', label = 'SF9')
 plt.plot(sf10x, sf10y, 'o', color = 'y', label = 'SF10')
 plt.plot(sf11x, sf11y, 'o', color = 'k', label = 'SF11')
 plt.plot(sf12x, sf12y, 'o', color = 'purple', label = 'SF12')
-"""
-bsxList=[]
+plt.legend(loc='upper left')
+plt.title('Distance vs SF')
+plt.xlabel('X')
+plt.ylabel('Y')
+plt.show()
+
+
+plt.figure(2)
+plt.plot(bsx, bsy, 'o', color = 'r', label='basestation')
+print(len(rssi))
+#RSSI HEATMAP --> going to manipulate the color based on the RSSI, and plot them based on actual layout
+#currently just takes 6% of the rssi value and bases the color on that. I want to make this better so the
+#colors have higher contrast on the graph, but this will do for now.
+for i in range(0, len(rssi)):
+    clr = (0, (1 - rssi[i]*0.006*-1), 0)#color for each point
+    plt.plot(x[i], y[i], 'o', color = clr)
+    
+plt.legend(loc='upper left')
+plt.title('RSSI Heatmap')
+plt.xlabel('X')
+plt.ylabel('Y')
+plt.show()
+    
+"""bsxList=[]
 bsyList=[]
 bszList=[]
 bsxList.append(bsx)
@@ -724,19 +750,18 @@ bszList.append(bsz)
 
 fig = plt.figure()
 ax = fig.add_subplot(111, projection='3d')
-ax.plot(bsxList, bsyList, bszList, 'o', color='r', label='basestation')
-ax.plot(sf6x, sf6y, sf6z, 'o', color = 'b', label = 'SF6')
-ax.plot(sf7x, sf7y, sf7z, 'o', color = 'g', label = 'SF7')
-ax.plot(sf8x, sf8y, sf8z, 'o', color = 'c', label = 'SF8')
-ax.plot(sf9x, sf9y, sf9z, 'o', color = 'm', label = 'SF9')
-ax.plot(sf10x, sf10y, sf10z, 'o', color = 'y', label = 'SF10')
-ax.plot(sf11x, sf11y, sf11z, 'o', color = 'k', label = 'SF11')
-ax.plot(sf12x, sf12y, sf12z, 'o', color = 'purple', label = 'SF12')
-
-
-#plt.plot(x, y, 'o', color='k', label='nodes')#all the nodes
+ax.scatter(bsxList, bsyList, bszList, 'o', color='r', label='basestation')
+ax.scatter(sf6x, sf6y, sf6z, 'o', color = 'b', label = 'SF6')
+ax.scatter(sf7x, sf7y, sf7z, 'o', color = 'g', label = 'SF7')
+ax.scatter(sf8x, sf8y, sf8z, 'o', color = 'c', label = 'SF8')
+ax.scatter(sf9x, sf9y, sf9z, 'o', color = 'm', label = 'SF9')
+ax.scatter(sf10x, sf10y, sf10z, 'o', color = 'y', label = 'SF10')
+ax.scatter(sf11x, sf11y, sf11z, 'o', color = 'k', label = 'SF11')
+ax.scatter(sf12x, sf12y, sf12z, 'o', color = 'purple', label = 'SF12')
 plt.legend(loc='upper left')
-plt.show()
+plt.show()"""
+
+print("Basestation Location: ", str(bsx), " ", str(bsy), " ", str(bsz))
 
   
 print("done!")

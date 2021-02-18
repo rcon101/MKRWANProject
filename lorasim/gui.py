@@ -1,21 +1,16 @@
-# -*- coding: utf-8 -*-
-"""
-Created on Wed Jun 17 11:32:31 2020
-
-@author: Ryanc
-"""
-
 import os
-from tkinter import *
 import math
 import simpy
 import random
 import numpy as np
 import math
 import sys
-import matplotlib.pyplot as plt
+from tkinter import *
+from matplotlib.figure import Figure 
+from matplotlib.backends.backend_tkagg import (FigureCanvasTkAgg, 
+NavigationToolbar2Tk) 
 
-#should take an array of buttons as an argument
+
 def run():
     print("Run Program")
     #need to change this os.system line to extrace the data from the widgets
@@ -28,12 +23,79 @@ def run():
     
     print(cmdStr)
     os.system(cmdStr)
+
+# plot function is created for 
+# plotting the graph in 
+# tkinter window 
+def plot():
     
-#initialize window frame
-root = Tk()
+    #START NEW EDITS
+    experiment = menu_experiment['text']#get the experiment number so we know what file to use
+    fname = "nodes" + str(experiment) + ".dat"
+    x = []#x locations
+    y = []#y locations
+    z = []#z locations
+    dist = []#distance from the origin (hypotenuse)
+    rssi = []#rssi for the associated node
+    sf = []
+    #we're going to implement this by opening the file becuase we want to use the contents of previous experiments as well
+    #the gui will include a feature to delete this file
+    first = 0
+    with open(fname, "r") as f:
+        for line in f:
+            if(first==1):
+                #format of nodesX.dat files is: <NodeID> <x> <y> <dist> <RSSI>
+                l = line.split()#splits it into an array separated by the spaces
+                #we can ignore the id so we only care about indices 1-3
+                x.append(float(l[1]))
+                y.append(float(l[2]))
+                z.append(float(l[3]))
+                dist.append(float(l[4]))
+                rssi.append(float(l[5]))
+                sf.append(float(l[6]))
+            else:
+                    first += 1
+    f.close()
+    #END NEW EDITS
+    
+    # the figure that will contain the plot 
+    fig = Figure(figsize = (5, 5), 
+				dpi = 100) 
+    
+    # list of squares 
+    y = [i**2 for i in range(101)] 
 
-#add the subplot
+	# adding the subplot 
+    plot1 = fig.add_subplot(111) 
 
+	# plotting the graph 
+    plot1.plot(y) 
+
+	# creating the Tkinter canvas 
+	# containing the Matplotlib figure 
+    canvas = FigureCanvasTkAgg(fig, 
+							master = root) 
+    canvas.draw()
+
+	# placing the canvas on the Tkinter window 
+    canvas.get_tk_widget().grid(columnspan=4)
+
+	# creating the Matplotlib toolbar 
+    toolbar = NavigationToolbar2Tk(canvas, 
+								root) 
+    toolbar.update() 
+
+	# placing the toolbar on the Tkinter window 
+    canvas.get_tk_widget().grid(columnspan=4)
+
+# the main Tkinter window 
+root = Tk() 
+
+# setting the title 
+root.title('LoraSim Plotting') 
+
+# dimensions of the main window 
+#root.geometry("500x500") 
 
 #initialize all widgets
 
@@ -64,7 +126,7 @@ entry_bw = Entry(root)
 
 #initialize list and string var for dropdowns
 v0 = StringVar(root)
-expList = ["0", "1", "2", "3", "4", "5", "6"]
+expList = ["0", "1", "2", "3", "4", "5"]
 v0.set(expList[0])
 v1 = StringVar(root)
 tfList = ["False", "True"]
@@ -115,4 +177,17 @@ menu_collision.grid(row=5, column=3)
 #all columnms
 runBtn.grid(columnspan=4)
 
+# button that displays the plot 
+plot_button = Button(master = root, 
+					command = plot, 
+					height = 2, 
+					width = 10, 
+					text = "Plot") 
+
+# place the button
+# in main window
+plot_button.grid(columnspan=4)
+
+# run the gui 
 root.mainloop()
+
